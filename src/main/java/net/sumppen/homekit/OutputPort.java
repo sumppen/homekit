@@ -1,16 +1,12 @@
 package net.sumppen.homekit;
 
-import java.net.URI;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.web.client.RestTemplate;
 
-import com.beowulfe.hap.HomekitAccessory;
 import com.beowulfe.hap.HomekitCharacteristicChangeCallback;
-import com.beowulfe.hap.Service;
 import com.beowulfe.hap.accessories.Outlet;
 
 public class OutputPort implements Outlet {
@@ -18,7 +14,7 @@ public class OutputPort implements Outlet {
 		PORT_0(0),WATERHEATER(1, true),HEATING_ENTRANCE(2),
 		HEATING_LIVINGROOM(3),HEATING_KITCHEN(4),
 		HEATING_UPSTAIRS_NORTH(5),HEATING_UPSTAIRS_SOUTH(6),
-		PORT_7(7), INVALID(-1);
+		PORT_7(7);
 		
 		private final int id;
 		private final boolean inUse;
@@ -29,9 +25,6 @@ public class OutputPort implements Outlet {
 			this.id = id;
 			this.inUse = inUse;
 		}
-		int getId() {
-			return id;
-		}
 		public String getModel() {
 			return "p"+id;
 		}
@@ -40,7 +33,9 @@ public class OutputPort implements Outlet {
 		}
 	}
 
-	private static final URI URL = null;
+	private static final String URL = "http://192.168.10.10:8000";
+
+	private static final int OFFSET = 10;
 
 	private final Port port;
 	private RestTemplate restTemplate = new RestTemplate();
@@ -50,7 +45,7 @@ public class OutputPort implements Outlet {
 	}
 
 	public int getId() {
-		return port.getId();
+		return (port.id + OFFSET);
 	}
 
 	public String getLabel() {
@@ -88,7 +83,8 @@ public class OutputPort implements Outlet {
 		PiFace state = restTemplate.getForObject(URL, PiFace.class);
 		state.setOutputState(port.id,newState);
 		Map<String,Integer> map = new HashMap<String, Integer>();
-		state = restTemplate.getForObject(URL, PiFace.class,map );
+		map.put("output_port", state.getOutput_port());
+		state = restTemplate.getForObject(URL+"?output_port={output_port}", PiFace.class,map );
 		return null;
 	}
 
