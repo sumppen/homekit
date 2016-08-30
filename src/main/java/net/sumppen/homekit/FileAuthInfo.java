@@ -14,6 +14,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.log4j.Logger;
 
 import com.beowulfe.hap.HomekitAuthInfo;
@@ -46,19 +48,19 @@ public class FileAuthInfo implements HomekitAuthInfo {
 			if(props.isEmpty()) {
 				props.setProperty("mac",HomekitServer.generateMac());
 				props.setProperty("salt", HomekitServer.generateSalt().toString());
-				props.setProperty("privateKey",new String(HomekitServer.generateKey()));
+				props.setProperty("privateKey",DatatypeConverter.printHexBinary(HomekitServer.generateKey()));
 				props.setProperty("pin",createPin());
 				saveParams(props, name);
 			}
 			mac = props.getProperty("mac");
 			salt = new BigInteger(props.getProperty("salt"));
-			privateKey = props.getProperty("privateKey").getBytes();
+			privateKey = DatatypeConverter.parseHexBinary(props.getProperty("privateKey"));
 			pin = props.getProperty("pin");
 		} catch (IOException e) {
 		}
 		System.out.println("The PIN for pairing is "+pin);
 	}
-
+	
 	private void saveParams(Properties props, String name) throws IOException {
         File f = new File(name);
         OutputStream out = new FileOutputStream( f );
@@ -117,7 +119,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 	private void saveUsers() throws IOException {
 		Properties props = new Properties();
 		for(String userName : userKeyMap.keySet()) {
-			props.setProperty(userName, userKeyMap.get(userName).toString());
+			props.setProperty(userName, DatatypeConverter.printHexBinary(userKeyMap.get(userName)));
 		}
 		saveParams(props, "users.properties");
 	}
@@ -150,7 +152,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 
 	    while (e.hasMoreElements()) {
 	      String name = (String) e.nextElement();
-	      userKeyMap.putIfAbsent(name, props.getProperty(name).getBytes());
+	      userKeyMap.putIfAbsent(name, DatatypeConverter.parseHexBinary(props.getProperty(name)));
 		}
 	}
 
