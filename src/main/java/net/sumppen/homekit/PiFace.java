@@ -1,11 +1,14 @@
 package net.sumppen.homekit;
 
+import org.apache.log4j.Logger;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PiFace {
 	private int input_port;
 	private int output_port;
+	private final Logger log = Logger.getLogger(PiFace.class);
 	
 	public int getInput_port() {
 		return input_port;
@@ -17,7 +20,8 @@ public class PiFace {
 		return output_port;
 	}
 	public boolean isOutputActive(int port) {
-		return (output_port & (2^port))!= 0;
+		log.info("Comparing "+output_port+" & "+(1 << port)+" = "+(output_port & (1 << port)));
+		return (output_port & (1 << port))!= 0;
 	}
 	public void setOutput_port(int output_port) {
 		this.output_port = output_port;
