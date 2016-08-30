@@ -9,9 +9,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
+import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import org.apache.log4j.Logger;
 
 import com.beowulfe.hap.HomekitAuthInfo;
 import com.beowulfe.hap.HomekitServer;
@@ -32,12 +35,21 @@ public class FileAuthInfo implements HomekitAuthInfo {
 	private byte[] privateKey;
 	private String pin;
 	private final ConcurrentMap<String, byte[]> userKeyMap = new ConcurrentHashMap<>();
+	
+	private final Logger log = Logger.getLogger(FileAuthInfo.class);
 
 	public FileAuthInfo() throws InvalidAlgorithmParameterException {
 		Properties props;
 		String name = "server.properties";
 		try {
 			props = loadParams(name);
+			if(props.isEmpty()) {
+				props.setProperty("mac",HomekitServer.generateMac());
+				props.setProperty("salt", HomekitServer.generateSalt().toString());
+				props.setProperty("privateKey",new String(HomekitServer.generateKey()));
+				props.setProperty("pin",createPin());
+				saveParams(props, name);
+			}
 			mac = props.getProperty("mac");
 			salt = new BigInteger(props.getProperty("salt"));
 			privateKey = props.getProperty("privateKey").getBytes();
@@ -57,7 +69,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 		return PIN;
 	}
 
-	public Properties loadParams(String name) throws IOException, InvalidAlgorithmParameterException {
+	public Properties loadParams(String name) throws IOException {
 		Properties props = new Properties();
 		InputStream is = null;
 
@@ -66,11 +78,6 @@ public class FileAuthInfo implements HomekitAuthInfo {
 			is = new FileInputStream( f );
 			props.load( is );
 		} catch (IOException e) {
-			props.setProperty("mac",HomekitServer.generateMac());
-			props.setProperty("salt", HomekitServer.generateSalt().toString());
-			props.setProperty("privateKey",new String(HomekitServer.generateKey()));
-			props.setProperty("pin",createPin());
-			saveParams(props, name);
 		}
 		return props;
 	}
@@ -97,19 +104,54 @@ public class FileAuthInfo implements HomekitAuthInfo {
 
 	@Override
 	public void createUser(String username, byte[] publicKey) {
-		userKeyMap.putIfAbsent(username, publicKey);
+		if(userKeyMap.putIfAbsent(username, publicKey) == null) {
+			try {
+				saveUsers();
+			} catch (IOException e) {
+				log.error("Failed to save users",e);
+			}
+		}
 		System.out.println("Added pairing for "+username);
+	}
+
+	private void saveUsers() throws IOException {
+		Properties props = new Properties();
+		for(String userName : userKeyMap.keySet()) {
+			props.setProperty(userName, userKeyMap.get(userName).toString());
+		}
+		saveParams(props, "users.properties");
 	}
 
 	@Override
 	public void removeUser(String username) {
 		userKeyMap.remove(username);
+		try {
+			saveUsers();
+		} catch (IOException e) {
+			log.error("Failed to save users",e);
+		}
 		System.out.println("Removed pairing for "+username);
 	}
 
 	@Override
 	public byte[] getUserPublicKey(String username) {
+		if(userKeyMap.isEmpty()) {
+			try {
+				loadUsers();
+			} catch (IOException e) {
+			}
+		}
 		return userKeyMap.get(username);
+	}
+
+	private void loadUsers() throws IOException {
+		Properties props = loadParams("users.properties");
+	    Enumeration e = props.propertyNames();
+
+	    while (e.hasMoreElements()) {
+	      String name = (String) e.nextElement();
+	      userKeyMap.putIfAbsent(name, props.getProperty(name).getBytes());
+		}
 	}
 
 }
