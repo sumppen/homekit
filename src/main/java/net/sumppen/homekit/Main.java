@@ -23,7 +23,7 @@ public class Main
 		try {
 			//byte[] addr = {(byte) 192,(byte) 168,10,(byte) 137};
 			HomekitServer homekit = new HomekitServer(PORT);
-			HomekitRoot bridge = homekit.createBridge(new MockAuthInfo(), "Lindberg Bridge", "Sumppen Inc.", "G6", "111abel234");
+			HomekitRoot bridge = homekit.createBridge(new FileAuthInfo(), "Lindberg Bridge", "Sumppen Inc.", "G6", "111abel234");
 			for(Port port : Port.values()) {
 				OutputPort accessory = new OutputPort(port);
 				if(port.isInUse()) {
