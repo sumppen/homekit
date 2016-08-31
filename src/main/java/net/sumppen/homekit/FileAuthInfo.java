@@ -62,6 +62,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 	}
 	
 	private void saveParams(Properties props, String name) throws IOException {
+		log.info("Saving properties "+name);
         File f = new File(name);
         OutputStream out = new FileOutputStream( f );
         props.store(out, "Stored");
@@ -106,6 +107,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 
 	@Override
 	public void createUser(String username, byte[] publicKey) {
+		log.info("Create user: "+username);
 		if(userKeyMap.putIfAbsent(username, publicKey) == null) {
 			try {
 				saveUsers();
