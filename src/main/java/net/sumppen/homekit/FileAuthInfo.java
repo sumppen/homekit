@@ -8,12 +8,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -122,11 +127,18 @@ public class FileAuthInfo implements HomekitAuthInfo {
 	}
 
 	private void saveUsers() throws IOException {
-		Properties props = new Properties();
+		Path users = Paths.get("users");
+		if(Files.notExists(users))
+			Files.createDirectory(users);
+		if(!Files.isDirectory(users))
+			throw new IOException(users.toAbsolutePath()+" exists but is not a directory");
+		
 		for(String userName : userKeyMap.keySet()) {
-			props.setProperty(userName, DatatypeConverter.printHexBinary(userKeyMap.get(userName)));
+			Path user = users.resolve(userName);
+			if(!Files.exists(user)) {
+				Files.write(users, userKeyMap.get(userName));
+			}
 		}
-		saveParams(props, "users.properties");
 	}
 
 	@Override
@@ -142,13 +154,32 @@ public class FileAuthInfo implements HomekitAuthInfo {
 
 	@Override
 	public byte[] getUserPublicKey(String username) {
-		if(userKeyMap.isEmpty()) {
+		if(!userKeyMap.containsKey(username)) {
 			try {
-				loadUsers();
+				loadUser(username);
 			} catch (IOException e) {
 			}
 		}
 		return userKeyMap.get(username);
+	}
+
+	private void loadUser(String username) throws IOException {
+		log.info("Loading "+username);
+		Path users = Paths.get("users");
+		if(Files.notExists(users))
+			Files.createDirectory(users);
+		if(!Files.isDirectory(users))
+			throw new IOException(users.toAbsolutePath()+" exists but is not a directory");
+		Path user = users.resolve(username);
+		byte[] bytes;
+		if(Files.exists(user)) {
+			bytes = Files.readAllBytes(user);
+			userKeyMap.putIfAbsent(username, bytes);
+			log.info(username+" loaded");
+		} else {
+			log.info(username+" was not found");
+		}
+		
 	}
 
 	private void loadUsers() throws IOException {
