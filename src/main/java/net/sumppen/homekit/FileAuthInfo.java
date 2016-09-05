@@ -54,19 +54,31 @@ public class FileAuthInfo implements HomekitAuthInfo {
 			if(props.isEmpty()) {
 				props.setProperty("mac",HomekitServer.generateMac());
 				props.setProperty("salt", HomekitServer.generateSalt().toString());
-				props.setProperty("privateKey",DatatypeConverter.printHexBinary(HomekitServer.generateKey()));
 				props.setProperty("pin",createPin());
 				saveParams(props, name);
 			}
 			mac = props.getProperty("mac");
 			salt = new BigInteger(props.getProperty("salt"));
-			privateKey = DatatypeConverter.parseHexBinary(props.getProperty("privateKey"));
+			privateKey = readKey();
 			pin = props.getProperty("pin");
 		} catch (IOException e) {
 		}
 		System.out.println("The PIN for pairing is "+pin);
 	}
 	
+	private byte[] readKey() throws InvalidAlgorithmParameterException, IOException {
+		byte[] key; 			
+		Path keyFile = Paths.get("private.key");
+		if(Files.exists(keyFile)) {
+			key = Files.readAllBytes(keyFile);
+		} else {
+			key = HomekitServer.generateKey();
+			Files.write(keyFile, key);
+		}
+
+		return key;
+	}
+
 	private void saveParams(Properties props, String name) throws IOException {
 		log.info("Saving properties "+name);
         File f = new File(name);
