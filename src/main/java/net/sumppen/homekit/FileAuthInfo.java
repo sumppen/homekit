@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.util.Enumeration;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -69,7 +70,9 @@ public class FileAuthInfo implements HomekitAuthInfo {
     }
 
 	private String createPin() {
-		return PIN;
+		Random rnd = new Random();
+		String pin = String.format("%03d-%02d-%03d", rnd.nextInt(1000), rnd.nextInt(100), rnd.nextInt(1000));
+		return pin;
 	}
 
 	public Properties loadParams(String name) throws IOException {
