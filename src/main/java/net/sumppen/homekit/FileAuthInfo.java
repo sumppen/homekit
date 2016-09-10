@@ -148,7 +148,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 		for(String userName : userKeyMap.keySet()) {
 			Path user = users.resolve(userName);
 			if(!Files.exists(user)) {
-				Files.write(users, userKeyMap.get(userName));
+				Files.write(user, userKeyMap.get(userName));
 			}
 		}
 	}
@@ -157,11 +157,23 @@ public class FileAuthInfo implements HomekitAuthInfo {
 	public void removeUser(String username) {
 		userKeyMap.remove(username);
 		try {
-			saveUsers();
+			Path user = getUserPath(username);
+			if(Files.exists(user)) 
+				Files.delete(user);
 		} catch (IOException e) {
 			log.error("Failed to save users",e);
 		}
 		System.out.println("Removed pairing for "+username);
+	}
+
+	private Path getUserPath(String username) throws IOException {
+		Path users = Paths.get("users");
+		if(Files.notExists(users))
+			Files.createDirectory(users);
+		if(!Files.isDirectory(users))
+			throw new IOException(users.toAbsolutePath()+" exists but is not a directory");
+		Path user = users.resolve(username);
+		return user;
 	}
 
 	@Override
@@ -177,12 +189,7 @@ public class FileAuthInfo implements HomekitAuthInfo {
 
 	private void loadUser(String username) throws IOException {
 		log.info("Loading "+username);
-		Path users = Paths.get("users");
-		if(Files.notExists(users))
-			Files.createDirectory(users);
-		if(!Files.isDirectory(users))
-			throw new IOException(users.toAbsolutePath()+" exists but is not a directory");
-		Path user = users.resolve(username);
+		Path user = getUserPath(username);
 		byte[] bytes;
 		if(Files.exists(user)) {
 			bytes = Files.readAllBytes(user);
