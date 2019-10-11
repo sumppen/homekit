@@ -12,9 +12,11 @@ import com.beowulfe.hap.accessories.Switch;
 
 public class OutputPort implements Switch {
 	public enum Port {
-		PORT_0(0),WATERHEATER(1,"water heater", true),HEATING_ENTRANCE(2),
-		HEATING_LIVINGROOM(3),HEATING_KITCHEN(4),
-		HEATING_UPSTAIRS_NORTH(5),HEATING_UPSTAIRS_SOUTH(6),
+		PORT_0(0),WATERHEATER(1,"water heater", true),
+		HEATING_UPSTAIRS_NORTH(2, "Heating upstairs north", true),
+		HEATING_UPSTAIRS_SOUTH(3, "Heating upstairs south", true),
+		HEATING_ENTRANCE(4),
+		HEATING_LIVINGROOM(5),HEATING_KITCHEN(6),
 		PORT_7(7);
 		
 		private final int id;
